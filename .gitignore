@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Estado local do Vagrant
+.vagrant/
+
+# Binarios opcionais para a VM (ex.: bin/kiro-cli)
+bin/
+
+# Terraform (gerado ao rodar os labs)
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+tfplan
+plan-output.txt
+
+# Saida gerada pelo aula-3/3.5/pipeline.sh
+aula-3/3.5/MODULE-README.md
