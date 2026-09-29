@@ -22,14 +22,29 @@ O `pipeline.sh` é o runner. Cada `read -p` é um **gate humano**. A IA assiste,
 ├── pipeline.sh         ← Pipeline executável (o "CI" local)
 ├── valida.sh           ← Checa se todos os resources existem no cluster
 ├── prompts/
-│   ├── 01-gerar.md     ← Prompt para gerar toda a infra
+│   ├── 01-gerar-nginx.md ← Prompt para gerar toda a infra (usado pelo pipeline.sh)
+│   ├── 01-gerar.md     ← Variante do prompt de geração (http-echo, base do gabarito)
 │   ├── 02-review.md    ← Prompt para code review de segurança
 │   └── 03-documentar.md ← Prompt para gerar README do módulo
-└── referencia/         ← Gabarito (consultar só se travar)
+└── referencia/         ← Gabarito (consultar só se travar: cp referencia/*.tf .)
     ├── main.tf
     ├── variables.tf
     └── outputs.tf
 ```
+
+> **Atenção: o gabarito não usa nginx.** O `pipeline.sh` pede à IA um serviço
+> com `nginx:1.27-alpine` na porta **80** (`prompts/01-gerar-nginx.md`), mas o
+> gabarito em `referencia/` foi gerado a partir de `prompts/01-gerar.md` e usa
+> `hashicorp/http-echo:0.2.3` na porta **5678**. Os dois criam os mesmos 11
+> recursos e passam no `./valida.sh`. Se você copiar o gabarito
+> (`cp referencia/*.tf .`), lembre que:
+>
+> - o pod responde o texto `payment-api running`, e não a página padrão do nginx;
+> - o Service e a NetworkPolicy ficam na porta **5678**. No teste de
+>   NetworkPolicy abaixo, troque `http://payment-api:80` por
+>   `http://payment-api:5678`, senão até o pod com a label vai falhar;
+> - o review da IA (etapa 4) pode apontar a diferença em relação ao prompt.
+>   Isso é esperado e não é um erro do seu código.
 
 ## Pré-requisitos
 
