@@ -97,6 +97,11 @@ cd aula-1/1.5
 kubectl get nodes
 ```
 
+> **Windows:** o `k3s-setup.sh` é um script bash. Rode-o no **Git Bash** ou no
+> **WSL**, e não no PowerShell ou no Prompt de Comando. O kubeconfig vai para o
+> `~/.kube/config` do ambiente onde você rodou o script, então use o `kubectl`
+> nesse mesmo ambiente.
+
 O script copia o kubeconfig da VM para `~/.kube/config`. **Se já existir um
 `~/.kube/config`, ele é salvo antes em `~/.kube/config.bak-AAAAMMDD-HHMMSS`.**
 Para voltar ao anterior:
