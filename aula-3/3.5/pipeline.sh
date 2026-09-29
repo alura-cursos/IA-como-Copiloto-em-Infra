@@ -86,7 +86,7 @@ echo ""
 info "terraform plan"
 terraform plan -out=tfplan -no-color 2>&1 | tee plan-output.txt
 
-RESOURCE_COUNT=$(grep -c "will be created" plan-output.txt || echo "0")
+RESOURCE_COUNT=$(grep -c "will be created" plan-output.txt || true)
 echo ""
 echo -e "Resources a criar: ${GREEN}${RESOURCE_COUNT}${NC} (esperado: 9-11)"
 [[ "$RESOURCE_COUNT" -lt 7 ]] && echo -e "${YELLOW}⚠ Poucos resources. Revise o código.${NC}"

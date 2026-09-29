@@ -47,7 +47,8 @@ Vagrant.configure("2") do |config|
         cp /etc/rancher/k3s/k3s.yaml /home/vagrant/.kube/config
         chown -R vagrant:vagrant /home/vagrant/.kube
         chmod 600 /home/vagrant/.kube/config
-        echo 'export KUBECONFIG=/home/vagrant/.kube/config' >> /home/vagrant/.bashrc
+        grep -q 'KUBECONFIG=' /home/vagrant/.bashrc || \
+          echo 'export KUBECONFIG=/home/vagrant/.kube/config' >> /home/vagrant/.bashrc
 
         echo "=== Instalando Helm ==="
         curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash

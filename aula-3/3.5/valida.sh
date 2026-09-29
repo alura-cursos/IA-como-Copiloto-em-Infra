@@ -42,6 +42,11 @@ check_type() {
   fi
 }
 
+if ! kubectl get nodes >/dev/null 2>&1; then
+  echo -e "${RED}✗ kubectl não conecta ao cluster. Verifique com: kubectl get nodes${NC}"
+  exit 1
+fi
+
 echo "Validando recursos do payment-api no namespace 'payment'..."
 echo ""
 
