@@ -16,13 +16,14 @@ Vagrant.configure("2") do |config|
 
       node.vm.network :forwarded_port, guest: 80, host: vhost[:fweb_port], host_ip: vhost[:ip], auto_correct: true
       node.vm.network :forwarded_port, guest: 443, host: 8443, host_ip: vhost[:ip], auto_correct: true
-      node.vm.network :forwarded_port, guest: 6443, host: vhost[:k8s_port], host_ip: vhost[:ip], auto_correct: true
+      # Sem auto_correct: o kubeconfig aponta para 127.0.0.1:6443, entao a porta nao pode mudar
+      node.vm.network :forwarded_port, guest: 6443, host: vhost[:k8s_port], host_ip: vhost[:ip]
       node.vm.network :forwarded_port, guest: 30000, host: 30000, host_ip: vhost[:ip], auto_correct: true
       node.vm.network :forwarded_port, guest: 30001, host: 30001, host_ip: vhost[:ip], auto_correct: true
       node.vm.network :forwarded_port, guest: 30002, host: 30002, host_ip: vhost[:ip], auto_correct: true
 
-      node.vm.synced_folder "./ai-iac-labs", "/home/vagrant/ai-iac-labs"
-      node.vm.synced_folder "./bin", "/home/vagrant/bin"
+      # Raiz do repositorio -> ~/ai-iac-labs (caminhos usados nos exercicios)
+      node.vm.synced_folder "../..", "/home/vagrant/ai-iac-labs"
 
       node.vm.provider :virtualbox do |v|
         v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
@@ -52,32 +53,32 @@ Vagrant.configure("2") do |config|
         curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
         echo "=== Instalando Terraform ==="
-        curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --batch --yes --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
         echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/hashicorp.list
         apt-get update -qq
         apt-get install -y -qq terraform
 
-        echo "=== Instalando Node.js (para Kiro CLI) ==="
-        curl -fsSL https://fnm.vercel.app/install | bash
-        export PATH="/root/.local/share/fnm:$PATH"
-        eval "$(fnm env)"
-        fnm install --lts
-        # Disponibilizar para vagrant user
-        cp -r /root/.local/share/fnm /home/vagrant/.local/share/fnm 2>/dev/null || true
-        mkdir -p /home/vagrant/.local/share
-        cp -r /root/.local/share/fnm /home/vagrant/.local/share/
-        chown -R vagrant:vagrant /home/vagrant/.local
-        echo 'export PATH="/home/vagrant/.local/share/fnm:$PATH"' >> /home/vagrant/.bashrc
-        echo 'eval "$(fnm env)"' >> /home/vagrant/.bashrc
+        echo "=== Instalando Node.js LTS (NodeSource, para Gemini CLI) ==="
+        curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+        apt-get install -y -qq nodejs
 
-        echo "=== Instalando Kiro CLI ==="
-        cp /home/vagrant/bin/kiro-cli /usr/local/bin/kiro-cli
-        chmod +x /usr/local/bin/kiro-cli
+        echo "=== Instalando Kiro CLI (opcional) ==="
+        if [ -f /home/vagrant/ai-iac-labs/bin/kiro-cli ]; then
+          # kiro-cli* inclui kiro-cli-chat e kiro-cli-term, quando presentes
+          install -m 0755 /home/vagrant/ai-iac-labs/bin/kiro-cli* /usr/local/bin/
+          echo "Kiro CLI copiado de bin/"
+        elif [ -x /home/vagrant/.local/bin/kiro-cli ]; then
+          echo "Kiro CLI ja instalado em /home/vagrant/.local/bin"
+        else
+          sudo -iu vagrant bash -o pipefail -c 'curl -fsSL https://cli.kiro.dev/install | bash' || \
+            echo "AVISO: falha ao instalar o Kiro CLI. Instale manualmente seguindo https://kiro.dev/"
+        fi
+        grep -q 'HOME/.local/bin' /home/vagrant/.bashrc || \
+          echo 'export PATH="$HOME/.local/bin:$PATH"' >> /home/vagrant/.bashrc
 
         echo "=== Instalando Gemini CLI ==="
-        npm install -g @anthropic-ai/gemini-cli 2>/dev/null || \
-          npm install -g @google/gemini-cli 2>/dev/null || \
-          echo "NOTA: Instale o Gemini CLI manualmente. Verifique o pacote correto em https://ai.google.dev/gemini-api/docs"
+        npm install -g @google/gemini-cli || \
+          echo "AVISO: falha ao instalar o Gemini CLI. Instale manualmente: sudo npm install -g @google/gemini-cli"
 
         echo "=== Aguardando k3s ficar pronto ==="
         until kubectl get nodes --kubeconfig=/etc/rancher/k3s/k3s.yaml 2>/dev/null | grep -q " Ready"; do
@@ -87,12 +88,14 @@ Vagrant.configure("2") do |config|
         echo "=== Validação ==="
         echo "k3s:  $(k3s --version 2>&1 | head -1)"
         echo "helm: $(helm version --short 2>&1)"
-        echo "node: $(node --version 2>&1 || echo 'verificar com vagrant user')"
+        echo "node: $(node --version 2>&1)"
+        echo "kiro: $(sudo -iu vagrant kiro-cli --version 2>/dev/null || echo 'nao instalado')"
+        echo "gemini: $(gemini --version 2>/dev/null || echo 'nao instalado')"
         echo ""
         echo "============================================"
         echo " Lab pronto! Acesse com: vagrant ssh"
         echo " Depois configure:"
-        echo "   kiro auth"
+        echo "   kiro-cli login --use-device-flow"
         echo "   export GEMINI_API_KEY=sua-chave"
         echo "============================================"
       SHELL
