@@ -32,7 +32,7 @@ check "terraform instalado" "terraform version"
 
 echo ""
 echo "--- Assistentes de IA ---"
-check "Kiro CLI instalado" "which kiro-cli"
+check "Kiro CLI instalado (kiro-cli ou kiro)" "command -v kiro-cli || command -v kiro"
 check "Gemini CLI instalado" "which gemini"
 
 echo ""

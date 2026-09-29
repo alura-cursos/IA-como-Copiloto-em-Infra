@@ -15,7 +15,7 @@ kubectl get nodes
 
 ### Passo 1 — Ler o código (análise manual primeiro)
 ```bash
-cd ai-iac-labs/aula-3/3.4
+cd ~/ai-iac-labs/aula-3/3.4
 cat codigo-para-review.tf
 ```
 

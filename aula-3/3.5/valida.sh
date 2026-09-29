@@ -13,20 +13,20 @@ FAIL=0
 check() {
   if kubectl get "$1" -n payment 2>/dev/null | grep -q "$2"; then
     echo -e "${GREEN}✓${NC} $1/$2"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo -e "${RED}✗${NC} $1/$2 — NÃO ENCONTRADO"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 
 check_ns() {
   if kubectl get ns payment &>/dev/null; then
     echo -e "${GREEN}✓${NC} namespace/payment"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo -e "${RED}✗${NC} namespace/payment — NÃO ENCONTRADO"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 
@@ -35,10 +35,10 @@ check_type() {
   count=$(kubectl get "$1" -n payment --no-headers 2>/dev/null | wc -l)
   if [[ "$count" -gt 0 ]]; then
     echo -e "${GREEN}✓${NC} $1 (${count} encontrado(s))"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo -e "${RED}✗${NC} $1 — NENHUM ENCONTRADO"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # pipeline.sh — Pipeline IaC com Kiro CLI integrado (sem CI)
-# Uso: ./pipeline.sh
+# Uso (dentro da VM do lab): cd ~/ai-iac-labs/aula-3/3.5 && ./pipeline.sh
 set -euo pipefail
 
 GREEN='\033[0;32m'
@@ -9,8 +9,10 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-KIRO="${KIRO_BIN:-kiro}"
-REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+KIRO="${KIRO_BIN:-kiro-cli}"
+
+# Os caminhos abaixo (prompts/, main.tf...) sao relativos a pasta do script
+cd "$(dirname "$0")"
 
 gate() {
   echo ""
@@ -27,19 +29,15 @@ fail() { echo -e "${RED}✗ $1${NC}"; exit 1; }
 # ─────────────────────────────────────
 # PRÉ-REQUISITOS
 # ─────────────────────────────────────
-gate "PRÉ-REQUISITOS: Vagrant + K3s"
+gate "PRÉ-REQUISITOS: ferramentas + k3s"
 
-info "Verificando se a VM Vagrant está running..."
-VAGRANT_STATUS=$(cd "$REPO_ROOT" && vagrant status --machine-readable 2>/dev/null | grep ",state," | cut -d',' -f4)
+command -v terraform >/dev/null || fail "terraform não encontrado. Rode este script dentro da VM do lab (vagrant ssh)"
+command -v "$KIRO" >/dev/null || fail "Kiro CLI ('$KIRO') não encontrado. Instale o Kiro CLI ou defina KIRO_BIN"
+ok "terraform e $KIRO disponíveis"
 
-if [[ "$VAGRANT_STATUS" != "running" ]]; then
-  fail "Vagrant não está running (status: ${VAGRANT_STATUS:-desconhecido}). Execute: cd $REPO_ROOT && vagrant up"
-fi
-ok "Vagrant está running"
-
-info "Configurando acesso ao k3s (kubeconfig)..."
-bash "$REPO_ROOT/k3s-setup.sh"
-ok "kubectl configurado e conectado ao cluster"
+info "Verificando acesso ao k3s..."
+kubectl get nodes >/dev/null 2>&1 || fail "kubectl não conecta ao cluster. Verifique com: kubectl get nodes"
+ok "kubectl conectado ao cluster"
 echo ""
 
 # ─────────────────────────────────────
@@ -188,4 +186,6 @@ echo "  6. Aplicou no k3s e confirmou com kubectl"
 echo "  7. Documentou o módulo com Kiro"
 echo "  8. Provou reprodutibilidade (destroy + apply)"
 echo ""
-info "Cleanup final: terraform destroy -auto-approve"
+echo -e "${YELLOW}⚠ Os recursos do payment-api CONTINUAM no cluster (namespace 'payment').${NC}"
+info "Quando terminar, remova com:"
+echo "  cd ~/ai-iac-labs/aula-3/3.5 && terraform destroy -auto-approve"
